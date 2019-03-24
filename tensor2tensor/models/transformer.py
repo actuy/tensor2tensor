@@ -29,7 +29,7 @@ from __future__ import print_function
 from six.moves import range  # pylint: disable=redefined-builtin
 
 from tensor2tensor.data_generators import librispeech
-from tensor2tensor.data_generators.librispeech import add_librispeech_hparams, set_librispeech_length_hparams
+from tensor2tensor.data_generators.ljspeech_problem import set_ljspeech_hparams
 from tensor2tensor.layers import common_attention
 from tensor2tensor.layers import common_hparams
 from tensor2tensor.layers import common_layers
@@ -2407,8 +2407,7 @@ def transformer_librispeech_v1():
 @registry.ranged_hparams
 def transformer_ljspeech():
     hparms = transformer_base()
-    add_librispeech_hparams(hparms)
-    set_librispeech_length_hparams(hparms)
+    set_ljspeech_hparams(hparms)
 
 
 @registry.register_hparams
