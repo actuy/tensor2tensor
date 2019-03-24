@@ -2406,9 +2406,30 @@ def transformer_librispeech_v1():
 
 @registry.register_hparams
 def transformer_ljspeech():
-    hparms = transformer_base()
-    set_ljspeech_hparams(hparms)
-    return hparms
+    # hparams = transformer_base()
+    # set_ljspeech_hparams(hparams)
+    # return hparams
+    """HParams for training ASR model on LibriSpeech V2."""
+    hparams = transformer_base()
+
+    hparams.max_length = 1240000
+    hparams.max_input_seq_length = 1550
+    hparams.max_target_seq_length = 350
+    hparams.batch_size = 16
+    hparams.num_decoder_layers = 4
+    hparams.num_encoder_layers = 6
+    hparams.hidden_size = 384
+    hparams.learning_rate = 0.15
+    hparams.daisy_chain_variables = False
+    hparams.filter_size = 1536
+    hparams.num_heads = 2
+    hparams.ffn_layer = "conv_relu_conv"
+    hparams.conv_first_kernel = 9
+    hparams.weight_decay = 0
+    hparams.layer_prepostprocess_dropout = 0.2
+    hparams.relu_dropout = 0.2
+
+    return hparams
 
 
 @registry.register_hparams
