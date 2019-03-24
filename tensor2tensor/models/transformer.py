@@ -2404,7 +2404,7 @@ def transformer_librispeech_v1():
   return hparams
 
 
-@registry.ranged_hparams
+@registry.register_hparams
 def transformer_ljspeech():
     hparms = transformer_base()
     set_ljspeech_hparams(hparms)
