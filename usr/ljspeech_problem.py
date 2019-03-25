@@ -12,7 +12,6 @@ import tensorflow as tf
 
 _LJSPEECH_TTS_DATASET = "http://data.keithito.com/data/speech/LJSpeech-1.1.tar.bz2"
 
-
 def _collect_data(directory, input_ext, transcription_ext):
     """Traverses directory collecting input and target files."""
     # Directory from string to tuple pair of strings
@@ -149,17 +148,17 @@ class LjspeechProblem(speech_recognition.SpeechRecognitionProblem):
             data_dir, self.num_test_shards, shuffled=True)
 
         generator_utils.generate_files(
-            self.generator(data_dir, tmp_dir, self.TEST_DATASETS), test_paths)
+            self.generator(data_dir, tmp_dir, _LJSPEECH_TTS_DATASET), test_paths)
 
         if self.use_train_shards_for_dev:
             all_paths = train_paths + dev_paths
             generator_utils.generate_files(
-                self.generator(data_dir, tmp_dir, self.TRAIN_DATASETS), all_paths)
+                self.generator(data_dir, tmp_dir, _LJSPEECH_TTS_DATASET), all_paths)
             generator_utils.shuffle_dataset(all_paths)
         else:
             generator_utils.generate_dataset_and_shuffle(
-                self.generator(data_dir, tmp_dir, self.TRAIN_DATASETS), train_paths,
-                self.generator(data_dir, tmp_dir, self.DEV_DATASETS), dev_paths)
+                self.generator(data_dir, tmp_dir, _LJSPEECH_TTS_DATASET), train_paths,
+                self.generator(data_dir, tmp_dir, _LJSPEECH_TTS_DATASET), dev_paths)
 
     def dataset_filename(self):
         return 'ljspeech_speech_problem'
