@@ -25,7 +25,7 @@ import scipy
 from tensor2tensor.layers import common_layers
 from tensor2tensor.layers import common_video
 import tensorflow as tf
-import tensorflow_probability as tfp
+
 
 arg_scope = tf.contrib.framework.arg_scope
 add_arg_scope = tf.contrib.framework.add_arg_scope
@@ -97,13 +97,13 @@ def postprocess(x, n_bits_x=8):
   return tf.cast(tf.clip_by_value(x, 0, 255), dtype=tf.uint8)
 
 
-class TemperedNormal(tfp.distributions.Normal):
+class TemperedNormal(tf.distributions.Normal):
   """Normal distribution with temperature T."""
 
   def __init__(self, loc, scale, temperature=1.0):
     self.temperature = temperature
     new_scale = scale * self.temperature
-    tfp.distributions.Normal.__init__(self, loc=loc, scale=new_scale)
+    tf.distributions.Normal.__init__(self, loc=loc, scale=new_scale)
 
   def sample(self, sample_shape=(), seed=None, name="sample"):
     if self.temperature == 0.0:
@@ -804,7 +804,7 @@ def temporal_latent_to_dist(name, x, hparams, output_channels=None):
     hparams: tf.contrib.training.Hparams.
     output_channels: int, Number of channels of the output gaussian mean.
   Returns:
-    dist: tfp.distributions.Normal
+    dist: tf.distributions.Normal
   """
   _, _, width, _, res_channels = common_layers.shape_list(x)
   if output_channels is None:
@@ -834,7 +834,7 @@ def temporal_latent_to_dist(name, x, hparams, output_channels=None):
     h = conv("res_final", h, apply_actnorm=False, conv_init="zeros",
              output_channels=2*output_channels, filter_size=[1, 1])
     mean, log_scale = h[:, :, :, 0::2], h[:, :, :, 1::2]
-  return tfp.distributions.Normal(mean, tf.exp(log_scale))
+  return tf.distributions.Normal(mean, tf.exp(log_scale))
 
 
 @add_arg_scope
@@ -875,7 +875,7 @@ def latent_to_dist(name, x, hparams, output_channels=None):
     output_channels: int, number of output channels of the mean (and std).
                      if not provided, set it to be the output channels of x.
   Returns:
-    dist: instance of tfp.distributions.Normal
+    dist: instance of tf.distributions.Normal
   Raises:
     ValueError: If architecture not in ["single_conv", "glow_nn"]
   """
@@ -916,7 +916,7 @@ def latent_to_dist(name, x, hparams, output_channels=None):
 
     mean = mean_log_scale[:, :, :, 0::2]
     log_scale = mean_log_scale[:, :, :, 1::2]
-    return tfp.distributions.Normal(mean, tf.exp(log_scale))
+    return tf.distributions.Normal(mean, tf.exp(log_scale))
 
 
 @add_arg_scope
@@ -944,11 +944,11 @@ def merge_level_and_latent_dist(level_dist, latent_dist,
   according to merge_std.
 
   Args:
-    level_dist: instance of tfp.distributions.Normal
-    latent_dist: instance of tfp.distributions.Normal
+    level_dist: instance of tf.distributions.Normal
+    latent_dist: instance of tf.distributions.Normal
     merge_std: can be "prev_level", "prev_step" or "normal".
   Returns:
-    merged_dist: instance of tfp.distributions.Normal
+    merged_dist: instance of tf.distributions.Normal
   """
   level_mean, level_std = level_dist.loc, level_dist.scale
   latent_mean, latent_std = latent_dist.loc, latent_dist.scale
@@ -963,7 +963,7 @@ def merge_level_and_latent_dist(level_dist, latent_dist,
     scale = level_std
   elif merge_std == "prev_step":
     scale = latent_std
-  return tfp.distributions.Normal(loc=new_mean, scale=scale)
+  return tf.distributions.Normal(loc=new_mean, scale=scale)
 
 
 @add_arg_scope
@@ -1034,7 +1034,7 @@ def level_cond_prior(prior_dist, z, latent, hparams, state):
         "state_to_dist", state.h, output_channels=output_channels)
   if latent_skip:
     new_mean = cond_dist.loc + last_latent
-    cond_dist = tfp.distributions.Normal(new_mean, cond_dist.scale)
+    cond_dist = tf.distributions.Normal(new_mean, cond_dist.scale)
   return cond_dist.loc, cond_dist.scale, state
 
 
@@ -1058,7 +1058,7 @@ def compute_prior(name, z, latent, hparams, condition=False, state=None,
            only if hparams.latent_dist_encoder = "conv_lstm".
     temperature: float, temperature with which to sample from the Gaussian.
   Returns:
-    prior_dist: instance of tfp.distributions.Normal
+    prior_dist: instance of tf.distributions.Normal
     state: Returns updated state.
   Raises:
     ValueError: If hparams.latent_dist_encoder is "pointwise" and if the shape
@@ -1215,7 +1215,7 @@ def scale_gaussian_prior(name, z, logscale_factor=3.0, trainable=True):
         "log_scale_latent", shape=z_shape, dtype=tf.float32,
         initializer=tf.zeros_initializer(), trainable=trainable)
     log_scale = log_scale * logscale_factor
-    return tfp.distributions.Normal(
+    return tf.distributions.Normal(
         loc=latent_multiplier * z, scale=tf.exp(log_scale))
 
 
@@ -1241,7 +1241,7 @@ def top_prior(name, z_shape, learn_prior="normal", temperature=1.0):
   with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
     h = tf.zeros(z_shape, dtype=tf.float32)
     if learn_prior == "normal":
-      prior_dist = tfp.distributions.Normal(h, tf.exp(h))
+      prior_dist = tf.distributions.Normal(h, tf.exp(h))
     elif learn_prior == "single_conv":
       prior_dist = single_conv_dist("top_learn_prior", h)
     else:

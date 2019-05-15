@@ -39,7 +39,7 @@ from tensor2tensor.utils import trainer_lib
 from tensor2tensor.utils.hparam import HParams
 
 import tensorflow as tf
-import tensorflow_probability as tfp
+
 
 
 @registry.register_hparams
@@ -545,7 +545,7 @@ def feed_forward_gaussian_fun(action_space, config, observations):
   logstd = tf.check_numerics(logstd, "logstd")
   value = tf.check_numerics(value, "value")
 
-  policy = tfp.distributions.MultivariateNormalDiag(mean, tf.exp(logstd))
+  policy = tf.distributions.MultivariateNormalDiag(mean, tf.exp(logstd))
 
   return NetworkOutput(policy, value, lambda a: tf.clip_by_value(a, -2., 2))
 

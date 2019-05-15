@@ -3,14 +3,18 @@
 
 import os
 import tarfile
-from tensor2tensor.data_generators import generator_utils
+from tensor2tensor.data_generators import generator_utils, audio_encoder
 from tensor2tensor.data_generators import problem
+import pandas as pd
 from tensor2tensor.data_generators import speech_recognition
+from tensor2tensor.data_generators.speech_recognition import ByteTextEncoderWithEos
 from tensor2tensor.utils import registry
+import concurrent.futures
 
 import tensorflow as tf
 
 _LJSPEECH_TTS_DATASET = "http://data.keithito.com/data/speech/LJSpeech-1.1.tar.bz2"
+
 
 def _collect_data(directory, input_ext, transcription_ext):
     """Traverses directory collecting input and target files."""
@@ -92,37 +96,72 @@ class LjspeechProblem(speech_recognition.SpeechRecognitionProblem):
         """If true, we only generate training data and hold out shards for dev."""
         return False
 
+    @staticmethod
+    def process_wav(raw_data_dir, media_file, model_hparams, linear=True):
+        media_file = os.path.join(raw_data_dir, 'wavs', media_file + '.wav')
+        wav_data, mel_data, linear_data = _process_utterance(media_file, model_hparams, linear=linear)
+        return wav_data, mel_data, linear_data
+
     def hparams(self, defaults=None, model_hparams=None):
         super().hparams(defaults, model_hparams)
         set_ljspeech_hparams(self.model_hparams)
         self.model_hparams.add_hparam('symbol_size', 64)
 
+    # def feature_encoders(self, _):
+    #     return {
+    #         "inputs": ByteTextEncoderWithEos(),
+    #         "waveforms": audio_encoder.AudioEncoder(sample_rate=22050),
+    #     }
+
     def generator(self, data_dir, tmp_dir, datasets,
                   eos_list=None, start_from=0, how_many=0):
         del eos_list
         i = 0
-        for url, subdir in datasets:
-            filename = os.path.basename(url)
-            compressed_file = generator_utils.maybe_download(tmp_dir, filename, url)
+        raw_data_dir = os.path.join(tmp_dir, "LjSpeech-1.1")
 
-            read_type = "r:gz" if filename.endswith("tgz") else "r"
+        # if not exist, download
+        if not os.path.exists(raw_data_dir):
+            filename = os.path.basename(datasets)
+            compressed_file = generator_utils.maybe_download(raw_data_dir, filename, datasets)
+            read_type = "r:bz2"
             with tarfile.open(compressed_file, read_type) as corpus_tar:
-                # Create a subset of files that don't already exist.
-                #   tarfile.extractall errors when encountering an existing file
-                #   and tarfile.extract is extremely slow
-                members = []
-                for f in corpus_tar:
-                    if not os.path.isfile(os.path.join(tmp_dir, f.name)):
-                        members.append(f)
-                corpus_tar.extractall(tmp_dir, members=members)
+                corpus_tar.extractall(raw_data_dir)
 
-            raw_data_dir = os.path.join(tmp_dir, "LjSpeech", subdir)
+        encoders = self.feature_encoders(data_dir)
+        audio_encoder = encoders["waveforms"]
+        text_encoder = encoders["targets"]
+        # text_encoded = text_encoder.encode(clean(text))
+        data_df = pd.read_csv(os.path.join(raw_data_dir, 'metadata.csv'))
+
+        with concurrent.futures.ProcessPoolExecutor(max_workers=16) as executor:
+            future_to_url = {
+                executor.submit(self.process_wav, raw_data_dir, r['wav'], self.model_hparams, False):
+                    (idx, r['phone'], r['txt1'], r['wav'])
+                for idx, r
+                in data_df.iloc[start_from:start_from + how_many].iterrows()
+            }
+
+        for url, subdir in datasets:
+            # filename = os.path.basename(url)
+            # compressed_file = generator_utils.maybe_download(tmp_dir, filename, url)
+            #
+            # read_type = "r:gz" if filename.endswith("tgz") else "r"
+            # with tarfile.open(compressed_file, read_type) as corpus_tar:
+            #     # Create a subset of files that don't already exist.
+            #     #   tarfile.extractall errors when encountering an existing file
+            #     #   and tarfile.extract is extremely slow
+            #     members = []
+            #     for f in corpus_tar:
+            #         if not os.path.isfile(os.path.join(tmp_dir, f.name)):
+            #             members.append(f)
+            #     corpus_tar.extractall(tmp_dir, members=members)
+
             data_files = _collect_data(raw_data_dir, "flac", "txt")
             data_pairs = data_files.values()
 
-            encoders = self.feature_encoders(data_dir)
-            audio_encoder = encoders["waveforms"]
-            text_encoder = encoders["targets"]
+            # encoders = self.feature_encoders(data_dir)
+            # audio_encoder = encoders["waveforms"]
+            # text_encoder = encoders["targets"]
 
             for utt_id, media_file, text_data in sorted(data_pairs)[start_from:]:
                 if 0 < how_many == i:

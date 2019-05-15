@@ -27,7 +27,7 @@ from tensor2tensor.utils import learning_rate
 from tensor2tensor.utils import optimize
 
 import tensorflow as tf
-import tensorflow_probability as tfp
+
 
 
 def define_ppo_step(data_points, hparams, action_space, lr):
@@ -41,7 +41,7 @@ def define_ppo_step(data_points, hparams, action_space, lr):
   (logits, new_value) = get_policy(observation, hparams, action_space)
   logits = tf.reshape(logits, obs_shape[:2] + [action_space.n])
   new_value = tf.reshape(new_value, obs_shape[:2])
-  new_policy_dist = tfp.distributions.Categorical(logits=logits)
+  new_policy_dist = tf.distributions.Categorical(logits=logits)
 
   new_pdf = new_policy_dist.prob(action)
 

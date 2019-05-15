@@ -22,7 +22,7 @@ from __future__ import print_function
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 import tensorflow as tf
-import tensorflow_probability as tfp
+
 
 from tensorflow_probability import edward2 as ed
 
@@ -84,7 +84,7 @@ class ActNorm(tf.keras.layers.Layer):
     if not isinstance(inputs, ed.RandomVariable):
       return super(ActNorm, self).__call__(inputs, *args, **kwargs)
 
-    bijector = tfp.bijectors.Inline(
+    bijector = tf.bijectors.Inline(
         forward_fn=self.__call__,
         inverse_fn=self.reverse,
         inverse_log_det_jacobian_fn=lambda y: -self.log_det_jacobian(y),

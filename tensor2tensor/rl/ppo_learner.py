@@ -32,7 +32,7 @@ from tensor2tensor.rl.restarter import Restarter
 from tensor2tensor.utils import trainer_lib
 
 import tensorflow as tf
-import tensorflow_probability as tfp
+
 
 
 class PPOLearner(PolicyLearner):
@@ -402,7 +402,7 @@ def _define_collect(batch_env, ppo_hparams, scope, frame_stack_size, eval_phase,
 
         reward, done = batch_env.simulate(action)
 
-        pdf = tfp.distributions.Categorical(logits=logits).prob(action)
+        pdf = tf.distributions.Categorical(logits=logits).prob(action)
         pdf = tf.reshape(pdf, shape=(num_agents,))
         value_function = tf.reshape(value_function, shape=(num_agents,))
         done = tf.reshape(done, shape=(num_agents,))

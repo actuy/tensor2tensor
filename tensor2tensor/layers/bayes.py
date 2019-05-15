@@ -24,7 +24,7 @@ import math
 
 import six
 import tensorflow as tf
-import tensorflow_probability as tfp
+
 
 from tensorflow_probability import edward2 as ed
 
@@ -648,7 +648,7 @@ class GaussianProcess(tf.keras.layers.Layer):
         loc=loc, covariance_matrix=covariance_matrix)
     random_variable = ed.Independent(random_variable.distribution,
                                      reinterpreted_batch_ndims=1)
-    bijector = tfp.bijectors.Inline(
+    bijector = tf.bijectors.Inline(
         forward_fn=lambda x: tf.transpose(x, [1, 0]),
         inverse_fn=lambda y: tf.transpose(y, [1, 0]),
         forward_event_shape_fn=lambda input_shape: input_shape[::-1],

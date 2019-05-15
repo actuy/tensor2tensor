@@ -27,7 +27,7 @@ from tensor2tensor.models.research import glow
 from tensor2tensor.models.research import glow_ops
 from tensor2tensor.utils import registry
 import tensorflow as tf
-import tensorflow_probability as tfp
+
 
 
 arg_scope = tf.contrib.framework.arg_scope
@@ -283,7 +283,7 @@ class NextFrameGlow(glow.Glow):
 
     Returns:
       objective: float, log-likelihood.
-      dist: instance of tfp.distributions.Normal.
+      dist: instance of tf.distributions.Normal.
 
     Raises:
       ValueError: If input_height is not equal to input_width, not even
@@ -309,7 +309,7 @@ class NextFrameGlow(glow.Glow):
         "prior_conv", x, 2*prior_channels, stride=[2, 2], apply_actnorm=False,
         conv_init="zeros")
     mean, log_scale = tf.split(mean_and_log_std, num_or_size_splits=2, axis=-1)
-    return tfp.distributions.Normal(mean, tf.exp(log_scale))
+    return tf.distributions.Normal(mean, tf.exp(log_scale))
 
   def top_cond_prior(self, name, cond_top_latents):
     """Maps the conditional top latents to a distribution.
@@ -322,7 +322,7 @@ class NextFrameGlow(glow.Glow):
                         If "conv_net", this is a list of tensors with length
                         equal to hparams.num_cond_latents.
     Returns:
-      cond_dist: tfp.distributions.Normal
+      cond_dist: tf.distributions.Normal
     Raises:
       ValueError: If cond_top_latents are not of the expected length.
     """
@@ -367,7 +367,7 @@ class NextFrameGlow(glow.Glow):
 
       # mu(z_{t}) = z_{t-1} + latent_encoder(z_{cond})
       if self.hparams.latent_skip:
-        top = tfp.distributions.Normal(last_latent + top.loc, top.scale)
+        top = tf.distributions.Normal(last_latent + top.loc, top.scale)
     return top
 
   def uncond_top_dist(self):
@@ -390,7 +390,7 @@ class NextFrameGlow(glow.Glow):
                     hparams.latent_dist_encoder
     Returns:
       objective: float, log-likelihood of z under the prior.
-      dist: instance of tfp.distributions.Normal, prior distribution.
+      dist: instance of tf.distributions.Normal, prior distribution.
     Raises:
       ValueError: If input is smaller than the prior, uneven height
                   or rectangular.
